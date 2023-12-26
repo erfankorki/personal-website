@@ -1,11 +1,13 @@
 const express = require("express");
 const multer = require("multer");
+const fs = require("fs");
 const ExcelJS = require("exceljs");
 
 const upload = multer();
 
 const app = express();
 const port = 3111;
+app.use(`/static`, express.static("static"));
 app.use(express.json({}));
 
 app.get("/", (req, res) => {
@@ -14,10 +16,12 @@ app.get("/", (req, res) => {
 
 app.get("/export/", upload.none(), async (req, res) => {
   /**
-   * @type Array<Array<string>>;
+   * @type {{table: Array<Array<string>> }} file;
    */
+  const file = JSON.parse(fs.readFileSync("table.json", { encoding: "utf-8" }));
 
-  const table = JSON.parse(req.query.table);
+  const table = JSON.parse(file.table);
+
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet("Test");
 
@@ -27,14 +31,13 @@ app.get("/export/", upload.none(), async (req, res) => {
     width: item.length * 2,
   }));
 
-  table.slice(1).forEach((items, index) => {
-    const row = (sheet.getRow(index).values = items.map((item) => item));
+  table.slice(1).forEach((items) => {
+    sheet.addRow(items);
   });
 
-  const buffer = await workbook.xlsx.writeBuffer();
-  const file = new Blob([buffer]);
+  await workbook.xlsx.writeFile("static/file.xlsx");
 
-  res.send(file);
+  res.redirect('/static/file.xlsx');
 });
 
 app.listen(port, () => {
