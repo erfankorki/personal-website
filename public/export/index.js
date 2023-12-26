@@ -22,13 +22,9 @@ export const files = {
           });
 
           app.get("/export/", upload.none(), async (req, res) => {
-            const file = fs.readFileSync("table.json", { encoding: "utf8" });
-            console.log(file);
-            const parsedFile = JSON.parse(JSON.stringify(file));
-            const table = [
-              ["erfan", "parastoo", "bahram", "laura"],
-              [10, 20, 30, 40],
-            ];
+            const file = fs.readFileSync("table.json", { encoding: "utf-8" });
+            const parsedFile = JSON.parse(file);
+            const table = parsedFile.table;
 
             const workbook = new ExcelJS.Workbook();
             const sheet = workbook.addWorksheet("Test");
