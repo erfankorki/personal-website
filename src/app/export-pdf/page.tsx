@@ -9,21 +9,21 @@ import ky from "ky";
 let webContainerInstance: WebContainer;
 
 const useExportContainer = () => {
-  const [loading, setLoading] = useState(false);
-  const [url, setURL] = useState("http://localhost:3111");
+  const [loading, setLoading] = useState(true);
+  const [url, setURL] = useState("");
 
   useEffect(() => {
     async function installDependencies() {
       const installProcess = await webContainerInstance.spawn("npm", [
         "install",
       ]);
-      //   installProcess.output.pipeTo(
-      //     new WritableStream({
-      //       write(data) {
-      //         console.log(data);
-      //       },
-      //     })
-      //   );
+      // installProcess.output.pipeTo(
+      //   new WritableStream({
+      //     write(data) {
+      //       console.log(data);
+      //     },
+      //   })
+      // );
       return installProcess.exit;
     }
 
@@ -32,6 +32,14 @@ const useExportContainer = () => {
         "run",
         "start",
       ]);
+
+      serverProcess.output.pipeTo(
+        new WritableStream({
+          write(data) {
+            console.log(data);
+          },
+        })
+      );
       webContainerInstance.on("server-ready", (port, url) => {
         console.log(url);
         setURL(url);
@@ -57,50 +65,37 @@ const useExportContainer = () => {
         throw new Error("Starting Server failed");
       }
     }
-    // bootContainer();
+    bootContainer();
   }, []);
 
-  return { url, loading };
+  return { url, setURL, loading, webContainerInstance };
 };
 
 const ExportPDF = () => {
-  const [table, setTable] = useImmer<Array<Array<string>>>([
-    ["erfan", "parastoo"],
-    ["hassan", "maryam"],
-  ]);
-  const { url, loading } = useExportContainer();
+  const [table, setTable] = useImmer<Array<Array<string | number>>>([[]]);
+  const { url, setURL, loading, webContainerInstance } = useExportContainer();
 
-  const onExport = useCallback(
-    (event: FormEvent) => {
-      event.preventDefault();
-      ky(`${url}/export/?table=${JSON.stringify(table)}`, {
-        prefixUrl: "",
-        method: "get",
-        headers: {
-          "content-type":
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        },
-      })
-        .then((response) => response.blob())
-        .then((data) => {
-          const href = URL.createObjectURL(data);
-          const link = document.createElement("a");
-          link.href = href;
-          link.setAttribute("download", "export.xlsx");
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          link.remove();
-        });
-    },
-    [table, url]
-  );
+  const onExport = async () => {
+    await webContainerInstance.fs.writeFile(
+      "table.json",
+      JSON.stringify({
+        table: [
+          ["erfan", "parastoo", "bahram", "laura"],
+          [10, 20, 30, 40],
+        ],
+      }),
+      {
+        encoding: "utf-8",
+      }
+    );
+    setURL(`${url}/export`);
+  };
 
   return (
     <main>
       <article>
         <h1>EXPORT PDF</h1>
-        {/* {loading ? (
+        {loading ? (
           <p>Loading...</p>
         ) : (
           <iframe
@@ -110,14 +105,15 @@ const ExportPDF = () => {
             className="border-black border"
             src={url}
           />
-        )} */}
+        )}
         <form
-          action={`${url}/export`}
+          action={`${url}`}
           method="get"
           target="export-iframe"
           onSubmit={onExport}
         >
           <button
+            disabled={loading}
             type="submit"
             className="w-40 h-10 rounded-lg border border-neutral-500"
           >

@@ -15,12 +15,9 @@ app.get("/", (req, res) => {
 });
 
 app.get("/export/", upload.none(), async (req, res) => {
-  /**
-   * @type {{table: Array<Array<string>> }} file;
-   */
-  const file = JSON.parse(fs.readFileSync("table.json", { encoding: "utf-8" }));
-
-  const table = JSON.parse(file.table);
+  const file = fs.readFileSync("table.json", { encoding: "utf8" });
+  const parsedFile = JSON.parse(file);
+  const table = JSON.parse(parsedFile.table);
 
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet("Test");
@@ -37,7 +34,7 @@ app.get("/export/", upload.none(), async (req, res) => {
 
   await workbook.xlsx.writeFile("static/file.xlsx");
 
-  res.redirect('/static/file.xlsx');
+  res.redirect("/static/file.xlsx");
 });
 
 app.listen(port, () => {
