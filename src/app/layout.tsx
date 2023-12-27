@@ -1,4 +1,10 @@
+import { EB_Garamond } from "next/font/google";
 import "./globals.css";
+
+const garamond = EB_Garamond({
+  subsets: ["latin"],
+  display: "swap",
+});
 
 export default function RootLayout({
   children,
@@ -7,7 +13,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className={`${garamond.className}`}>{children}</body>
     </html>
   );
 }
